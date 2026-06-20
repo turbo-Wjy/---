@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.ailearning.module.user.mapper.UserMapper">
+
+    <select id="selectRoleCodesByUserId" resultType="java.lang.String">
+        SELECT r.code
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        WHERE ur.user_id = #{userId}
+          AND r.deleted_at IS NULL
+          AND r.status = 'active'
+    </select>
+
+    <select id="selectPermissionCodesByUserId" resultType="java.lang.String">
+        SELECT DISTINCT p.code
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        JOIN role_permissions rp ON rp.role_id = r.id
+        JOIN permissions p ON p.id = rp.permission_id
+        WHERE ur.user_id = #{userId}
+          AND r.deleted_at IS NULL
+          AND p.deleted_at IS NULL
+          AND r.status = 'active'
+          AND p.status = 'active'
+    </select>
+
+    <select id="selectMenuCodesByUserId" resultType="java.lang.String">
+        SELECT DISTINCT p.code
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        JOIN role_permissions rp ON rp.role_id = r.id
+        JOIN permissions p ON p.id = rp.permission_id
+        WHERE ur.user_id = #{userId}
+          AND r.deleted_at IS NULL
+          AND p.deleted_at IS NULL
+          AND r.status = 'active'
+          AND p.status = 'active'
+          AND p.permission_type = 'menu'
+    </select>
+</mapper>

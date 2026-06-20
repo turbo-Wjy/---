@@ -1,0 +1,486 @@
+{
+  "version": "ai-post-course-competition-certificate-platform-v2",
+  "roles": [
+    {
+      "code": "admin",
+      "name": "系统管理员",
+      "core": true,
+      "dataScope": "platform",
+      "description": "负责账号、权限、菜单、AI智能体配置、模型参数和系统日志。",
+      "permissions": [
+        "account.manage",
+        "role.manage",
+        "permission.manage",
+        "menu.manage",
+        "ai_agent.configure",
+        "model_parameter.configure",
+        "base_data.manage",
+        "system_log.view_all",
+        "operation_log.view_all"
+      ],
+      "restrictions": [
+        "默认不参与岗位、简历、竞赛成果、证书成果等业务审核"
+      ]
+    },
+    {
+      "code": "major_leader",
+      "name": "专业负责人",
+      "core": true,
+      "dataScope": "major",
+      "description": "负责学生账号导入、岗位审核、证书标准导入、画像和分类统计导出。",
+      "permissions": [
+        "student.import_major",
+        "student.account_create_major",
+        "job_post.review_major",
+        "certificate_standard.import_major",
+        "certificate_standard.manage_major",
+        "student_profile.view_major",
+        "student_profile.export_major",
+        "statistics.export_major",
+        "post_course_competition_certificate_statistics.view_major",
+        "learning_effect_statistics.view_major"
+      ],
+      "restrictions": [
+        "只能查看和导出已绑定专业范围内的数据",
+        "不发布企业岗位",
+        "不直接替学生投递简历"
+      ]
+    },
+    {
+      "code": "teacher",
+      "name": "教师",
+      "core": true,
+      "dataScope": "assigned_or_course",
+      "description": "统一承载任课老师、小组负责教师、带队老师职责，通过职责标签和模块权限区分。",
+      "dutyTags": [
+        "course_teacher",
+        "group_teacher",
+        "competition_coach"
+      ],
+      "permissions": [
+        "course_resource.upload",
+        "course_knowledge_point.manage",
+        "student_profile.view_assigned",
+        "resume.review_group",
+        "competition_result.upload_coached",
+        "competition_material.manage_coached",
+        "learning_record.view_assigned"
+      ],
+      "restrictions": [
+        "只能查看课程、分组或竞赛带队范围内的数据",
+        "简历审核后可通过或打回，但不能代替学生确认投递"
+      ]
+    },
+    {
+      "code": "competition_admin",
+      "name": "竞赛管理员",
+      "core": true,
+      "dataScope": "college_competition",
+      "description": "负责竞赛发布、竞赛成果审核和荣誉展示。",
+      "permissions": [
+        "competition.publish",
+        "competition.update",
+        "competition_result.review",
+        "competition_honor.publish",
+        "competition_statistics.view"
+      ],
+      "restrictions": [
+        "不审核岗位和企业简历",
+        "不修改学生画像生成结果"
+      ]
+    },
+    {
+      "code": "enterprise_mentor",
+      "name": "企业导师",
+      "core": true,
+      "dataScope": "enterprise",
+      "description": "负责岗位发布、企业侧简历审核、提交或推荐简历。",
+      "permissions": [
+        "job_post.create",
+        "job_post.update_own",
+        "job_post.view_own_status",
+        "resume.view_enterprise_stage",
+        "resume.review_enterprise",
+        "resume.reject_to_student",
+        "resume.submit_or_recommend_company",
+        "resume.feedback_status"
+      ],
+      "restrictions": [
+        "不能直接查看全体学生",
+        "只能查看流转到企业审核节点的简历",
+        "不能修改学生画像、课程记录、竞赛记录、证书记录"
+      ]
+    },
+    {
+      "code": "student",
+      "name": "学生",
+      "core": true,
+      "dataScope": "self",
+      "description": "构建画像、生成资源、学习答题、上传成果、生成简历、岗位投递。",
+      "permissions": [
+        "dashboard.view_self",
+        "learning_profile.chat_build",
+        "learning_profile.view_self",
+        "learning_profile.update_by_behavior",
+        "ai_resource.generate_self",
+        "learning_path.view_self",
+        "resource_recommendation.view_self",
+        "ai_tutor.chat_self",
+        "learning_effect.view_self",
+        "course_resource.view",
+        "course_resource.download",
+        "quiz.practice",
+        "learning_record.create_self",
+        "job_square.view",
+        "resume.generate_ai",
+        "resume.edit_self",
+        "job_application.submit",
+        "competition_square.view",
+        "competition_result.view_self",
+        "certificate_standard.view",
+        "certificate_result.upload_self",
+        "project_training.view",
+        "personal_info.update_editable",
+        "password.change_self"
+      ],
+      "restrictions": [
+        "AI简历必须由学生确认后才能提交审核",
+        "不能查看其他学生隐私数据",
+        "学号、姓名、专业、班级等教务基础字段默认不可自行修改"
+      ]
+    },
+    {
+      "code": "data_viewer",
+      "name": "数据查看者",
+      "core": false,
+      "dataScope": "college_or_major_readonly",
+      "description": "只读查看统计、画像分析和学习效果。",
+      "permissions": [
+        "statistics.view_readonly",
+        "student_profile_statistics.view",
+        "learning_effect_statistics.view",
+        "post_course_competition_certificate_statistics.view"
+      ],
+      "restrictions": [
+        "默认只读",
+        "不参与账号管理、资源发布、审核流转和数据修改"
+      ]
+    }
+  ],
+  "teacherDutyTags": [
+    {
+      "code": "course_teacher",
+      "name": "任课老师",
+      "permissions": [
+        "course_resource.upload",
+        "course_knowledge_point.manage"
+      ]
+    },
+    {
+      "code": "group_teacher",
+      "name": "小组负责教师",
+      "permissions": [
+        "student_profile.view_assigned",
+        "resume.review_group",
+        "learning_record.view_assigned"
+      ]
+    },
+    {
+      "code": "competition_coach",
+      "name": "带队老师",
+      "permissions": [
+        "competition_result.upload_coached",
+        "competition_material.manage_coached"
+      ]
+    }
+  ],
+  "aiAgents": [
+    {
+      "code": "profile_builder_agent",
+      "name": "画像构建智能体"
+    },
+    {
+      "code": "resource_designer_agent",
+      "name": "资源设计智能体"
+    },
+    {
+      "code": "document_generator_agent",
+      "name": "文档生成智能体"
+    },
+    {
+      "code": "ppt_generator_agent",
+      "name": "PPT生成智能体"
+    },
+    {
+      "code": "question_bank_agent",
+      "name": "题库生成智能体"
+    },
+    {
+      "code": "mind_map_agent",
+      "name": "思维导图智能体"
+    },
+    {
+      "code": "video_animation_script_agent",
+      "name": "视频/动画脚本智能体"
+    },
+    {
+      "code": "practice_case_agent",
+      "name": "实操案例智能体"
+    },
+    {
+      "code": "learning_path_agent",
+      "name": "学习路径规划智能体"
+    },
+    {
+      "code": "resource_recommendation_agent",
+      "name": "资源推荐智能体"
+    },
+    {
+      "code": "ai_tutor_agent",
+      "name": "智能辅导智能体"
+    },
+    {
+      "code": "learning_evaluation_agent",
+      "name": "学习评估智能体"
+    },
+    {
+      "code": "resume_generator_agent",
+      "name": "简历生成智能体"
+    },
+    {
+      "code": "statistics_analysis_agent",
+      "name": "统计分析智能体"
+    }
+  ],
+  "profileDimensions": [
+    "knowledge_foundation",
+    "learning_goal",
+    "cognitive_style",
+    "knowledge_gap",
+    "error_prone_points",
+    "resource_preference",
+    "practice_ability",
+    "learning_progress"
+  ],
+  "menus": [
+    {
+      "code": "dashboard",
+      "name": "首页工作台",
+      "children": [
+        "今日任务",
+        "学习提醒",
+        "推荐资源",
+        "待审核事项",
+        "简历完善提醒"
+      ]
+    },
+    {
+      "code": "learning_profile",
+      "name": "学习画像",
+      "children": [
+        "对话式画像构建",
+        "动态画像",
+        "画像维度分析",
+        "画像更新记录"
+      ]
+    },
+    {
+      "code": "ai_learning_center",
+      "name": "AI学习中心",
+      "children": [
+        "多智能体资源生成",
+        "学习路径规划",
+        "资源精准推送",
+        "智能辅导",
+        "学习效果评估"
+      ]
+    },
+    {
+      "code": "course_learning",
+      "name": "课程学习",
+      "children": [
+        "课程图谱",
+        "课程资料",
+        "在线学习",
+        "答题练习",
+        "学习记录"
+      ]
+    },
+    {
+      "code": "job_ability",
+      "name": "岗位能力",
+      "children": [
+        "职位广场",
+        "我的简历",
+        "AI简历生成",
+        "投递记录",
+        "岗位匹配度"
+      ]
+    },
+    {
+      "code": "competition_growth",
+      "name": "竞赛成长",
+      "children": [
+        "竞赛任务",
+        "竞赛广场",
+        "我的竞赛成果",
+        "荣誉展示"
+      ]
+    },
+    {
+      "code": "certificate_standard",
+      "name": "证书达标",
+      "children": [
+        "证书标准",
+        "考证资料",
+        "证书题库",
+        "我的证书成果"
+      ]
+    },
+    {
+      "code": "project_training",
+      "name": "项目实训",
+      "children": [
+        "实训项目",
+        "实操案例",
+        "项目材料",
+        "项目评价"
+      ]
+    },
+    {
+      "code": "fusion_graph",
+      "name": "融合图谱",
+      "children": [
+        "岗课赛证关联图谱",
+        "能力成长路径",
+        "知识短板定位",
+        "推荐学习路径"
+      ]
+    },
+    {
+      "code": "statistics_analysis",
+      "name": "统计分析",
+      "children": [
+        "学生画像导出",
+        "专业分类统计",
+        "岗课赛证达成统计",
+        "学习效果统计"
+      ]
+    }
+  ],
+  "workflows": {
+    "conversationalProfileBuild": [
+      "学生进入学习画像",
+      "与画像构建智能体自然语言对话",
+      "系统抽取专业、学习目标、学习历史、兴趣、短板、偏好",
+      "生成不少于6个维度的动态学生画像",
+      "画像随学习行为持续更新"
+    ],
+    "multiAgentResourceGeneration": [
+      "学生提出学习需求",
+      "资源设计智能体拆解任务",
+      "读取学生画像、课程知识点、错题和学习记录",
+      "文档、PPT、题库、思维导图、视频动画脚本、实操案例、拓展阅读智能体协同生成",
+      "形成个性化资源包",
+      "推送给学生并记录使用行为",
+      "更新学习画像"
+    ],
+    "learningPathAndRecommendation": [
+      "汇总画像、课程进度、知识掌握和资源偏好",
+      "学习路径规划智能体生成阶段性目标",
+      "安排学习步骤和顺序",
+      "匹配文档、视频、题库、案例、项目材料",
+      "首页工作台推送今日任务",
+      "根据学生反馈和完成情况动态调整"
+    ],
+    "aiTutoring": [
+      "学生学习中提出问题",
+      "智能辅导智能体识别问题类型",
+      "结合学生画像和当前知识点",
+      "生成文字解答、图解说明、短视频或动画脚本",
+      "推荐相关题目或实操案例",
+      "记录问题、反馈和掌握情况",
+      "更新画像和资源推荐策略"
+    ],
+    "learningEffectEvaluation": [
+      "采集学习时长、资料浏览下载、答题正确率、错题类型、项目完成情况、资源反馈",
+      "学习评估智能体分析",
+      "生成学习效果报告",
+      "识别薄弱知识点",
+      "调整资源推送和学习计划",
+      "更新学生画像"
+    ],
+    "jobAndAiResume": [
+      "企业导师发布岗位",
+      "专业负责人审核岗位",
+      "打回时企业导师修改岗位后重新提交",
+      "审核通过后岗位进入职位广场",
+      "学生查看岗位",
+      "系统读取画像、课程、竞赛、证书、项目数据",
+      "简历生成智能体生成简历初稿",
+      "学生编辑确认并提交简历",
+      "小组负责教师审核，可打回学生修改",
+      "企业导师审核，可打回学生修改",
+      "企业导师提交或推荐给企业",
+      "投递结果进入学生画像"
+    ],
+    "courseLearningRecord": [
+      "任课老师上传课程资料",
+      "资料进入课程图谱",
+      "学生浏览、下载、学习",
+      "学生答题或完成任务",
+      "系统自动记录学习行为",
+      "进入学习效果评估",
+      "更新学习画像"
+    ],
+    "competitionHonor": [
+      "竞赛管理员发布竞赛",
+      "竞赛进入竞赛任务和竞赛广场",
+      "学生查看竞赛信息",
+      "带队老师上传竞赛成果或荣誉",
+      "竞赛管理员审核，可打回修改",
+      "通过后发布到荣誉展示和融合图谱",
+      "进入学生画像并可用于AI简历生成"
+    ],
+    "certificateResult": [
+      "专业负责人导入证书标准",
+      "证书标准进入证书模块",
+      "学生查看证书要求、资料和题库",
+      "学生学习并上传证书成果",
+      "小组负责教师审核，可打回补充证明",
+      "通过后证书成果归档",
+      "进入证书达标统计、学生画像和AI简历生成"
+    ],
+    "profileStatisticsExport": [
+      "对话画像、课程学习、学习评估、岗位投递、竞赛成果、证书成果、项目实训数据汇入学生画像",
+      "画像支撑个人画像、AI简历生成、岗位匹配、资源推荐和专业分类统计",
+      "专业负责人导出本专业学生画像表格和分类统计表格"
+    ]
+  },
+  "majorLeaderExports": [
+    "学生基础信息表",
+    "学生画像汇总表",
+    "学习画像维度统计",
+    "岗位能力分类统计",
+    "课程学习进度统计",
+    "学习效果评估统计",
+    "竞赛参与与获奖统计",
+    "证书达标统计",
+    "项目实训完成统计",
+    "简历完善度与投递状态统计"
+  ],
+  "auditLog": {
+    "required": true,
+    "fields": [
+      "operatorId",
+      "operatorRole",
+      "module",
+      "action",
+      "targetId",
+      "result",
+      "operatedAt",
+      "ipAddress",
+      "remark"
+    ]
+  }
+}

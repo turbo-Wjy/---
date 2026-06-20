@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: ai-learning-platform-backend
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deletedAt
+
+app:
+  security:
+    jwt-secret: ${APP_JWT_SECRET:change-this-dev-secret-change-this-dev-secret}
+    jwt-expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:720}
+  crypto:
+    aes-key: ${APP_AES_KEY:change-this-32-byte-dev-key-0001}
