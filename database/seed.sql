@@ -54,6 +54,7 @@ VALUES
   ('student_profile.view_assigned', '负责学生画像查看', 'learning_profile', 'action', '教师查看负责学生画像', 'active'),
   ('job_post.review_major', '专业负责人岗位审核', 'job_ability', 'action', '专业负责人审核企业导师发布的岗位', 'active'),
   ('certificate_standard.import_major', '本专业证书标准导入', 'certificate_standard', 'action', '专业负责人导入本专业证书标准', 'active'),
+  ('certificate_standard.manage_major', '本专业证书标准维护', 'certificate_standard', 'action', '专业负责人维护本专业证书标准', 'active'),
   ('course_resource.upload', '课程资料上传', 'course_learning', 'action', '任课老师上传课程资料', 'active'),
   ('course_knowledge_point.manage', '课程知识点维护', 'course_learning', 'action', '任课老师维护课程知识点', 'active'),
   ('resume.review_group', '小组负责教师简历审核', 'job_ability', 'action', '小组负责教师审核学生简历', 'active'),
@@ -66,10 +67,14 @@ VALUES
   ('learning_profile.chat_build', '对话式画像构建', 'learning_profile', 'action', '学生通过自然语言对话构建画像', 'active'),
   ('ai_resource.generate_self', 'AI资源生成', 'ai_learning_center', 'action', '学生调用多智能体生成学习资源', 'active'),
   ('learning_path.view_self', '学习路径查看', 'ai_learning_center', 'action', '学生查看个性化学习路径', 'active'),
+  ('learning_path.view.self', '学习路径查看', 'ai_learning_center', 'action', '学生查看个性化学习路径', 'active'),
   ('resource_recommendation.view_self', '资源精准推送查看', 'ai_learning_center', 'action', '学生查看系统推荐资源', 'active'),
+  ('resource_recommendation.view.self', '资源精准推送查看', 'ai_learning_center', 'action', '学生查看系统推荐资源', 'active'),
   ('ai_tutor.chat_self', '智能辅导', 'ai_learning_center', 'action', '学生使用智能辅导问答', 'active'),
   ('learning_effect.generate.self', '学习效果评估生成', 'ai_learning_center', 'action', '学生基于学习行为、答题和路径进度生成个人学习效果评估', 'active'),
+  ('learning_effect.generate_self', '学习效果评估生成', 'ai_learning_center', 'action', '学生基于学习行为、答题和路径进度生成个人学习效果评估', 'active'),
   ('learning_effect.view_self', '学习效果评估查看', 'ai_learning_center', 'action', '学生查看个人学习效果评估', 'active'),
+  ('learning_effect.view.self', '学习效果评估查看', 'ai_learning_center', 'action', '学生查看个人学习效果评估', 'active'),
   ('learning_record.create_self', '个人学习记录创建', 'course_learning', 'action', '学生浏览、下载、学习课程资源时记录学习行为', 'active'),
   ('quiz.practice', '答题练习', 'course_learning', 'action', '学生提交课程或证书练习题作答记录', 'active'),
   ('resume.generate_ai', 'AI简历生成', 'job_ability', 'action', '学生基于画像和成果生成AI简历', 'active'),
@@ -90,6 +95,7 @@ VALUES
   ('resource_package.review.assigned', '负责学生资源包审核', 'ai_learning_center', 'action', '教师审核负责学生提交的资源包', 'active'),
   ('resource_package.publish.teacher', '教师发布资源包', 'ai_learning_center', 'action', '教师发布审核通过的资源包', 'active'),
   ('teacher_dashboard.view.assigned', '教师工作台查看', 'teacher_dashboard', 'action', '教师查看负责学生、班级短板、待审核事项和学习报告', 'active'),
+  ('project.manage.teacher', '教师项目实训管理', 'project_training', 'action', '教师创建项目、维护项目交付物和实训过程', 'active'),
   ('project_deliverable.review.assigned', '项目交付物审核', 'project_training', 'action', '教师审核负责学生或项目组提交的项目交付物', 'active'),
   ('statistics.view_readonly', '统计只读查看', 'statistics_analysis', 'action', '只读查看统计分析', 'active'),
   ('statistics.export_major', '本专业统计导出', 'statistics_analysis', 'action', '专业负责人导出本专业画像与分类统计', 'active')
@@ -130,6 +136,7 @@ JOIN permissions p ON p.code IN (
   'job_capability.manage.major',
   'job_post.review_major',
   'certificate_standard.import_major',
+  'certificate_standard.manage_major',
   'statistics.export_major'
 )
 WHERE r.code = 'major_leader';
@@ -156,6 +163,7 @@ JOIN permissions p ON p.code IN (
   'resource_package.review.assigned',
   'resource_package.publish.teacher',
   'teacher_dashboard.view.assigned',
+  'project.manage.teacher',
   'project_deliverable.review.assigned'
 )
 WHERE r.code = 'teacher';
@@ -204,10 +212,14 @@ JOIN permissions p ON p.code IN (
   'ai_resource.generate_self',
   'resource_package.generate.self',
   'learning_path.view_self',
+  'learning_path.view.self',
   'resource_recommendation.view_self',
+  'resource_recommendation.view.self',
   'ai_tutor.chat_self',
   'learning_effect.generate.self',
+  'learning_effect.generate_self',
   'learning_effect.view_self',
+  'learning_effect.view.self',
   'learning_record.create_self',
   'quiz.practice',
   'resume.generate_ai',

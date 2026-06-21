@@ -5,10 +5,18 @@ import com.example.ailearning.common.security.CurrentUser;
 import com.example.ailearning.common.security.CurrentUserHolder;
 import com.example.ailearning.module.ai.entity.AiGeneratedResource;
 import com.example.ailearning.module.ai.mapper.AiGeneratedResourceMapper;
+import com.example.ailearning.module.dashboard.vo.ClassStudentOverviewVO;
+import com.example.ailearning.module.dashboard.vo.ClassWeakPointVO;
 import com.example.ailearning.module.dashboard.vo.DashboardItemVO;
 import com.example.ailearning.module.dashboard.vo.DashboardMetricVO;
 import com.example.ailearning.module.dashboard.vo.DashboardOverviewVO;
 import com.example.ailearning.module.dashboard.vo.LearningPathProgressVO;
+import com.example.ailearning.module.certificate.entity.CertificateResult;
+import com.example.ailearning.module.certificate.mapper.CertificateResultMapper;
+import com.example.ailearning.module.competition.entity.CompetitionResult;
+import com.example.ailearning.module.competition.mapper.CompetitionResultMapper;
+import com.example.ailearning.module.fusion.entity.StudentCapabilityScore;
+import com.example.ailearning.module.fusion.mapper.StudentCapabilityScoreMapper;
 import com.example.ailearning.module.learning.entity.LearningPath;
 import com.example.ailearning.module.learning.entity.LearningPathStep;
 import com.example.ailearning.module.learning.entity.ResourceRecommendation;
@@ -18,6 +26,10 @@ import com.example.ailearning.module.learning.mapper.ResourceRecommendationMappe
 import com.example.ailearning.module.learning.vo.ResourceRecommendationVO;
 import com.example.ailearning.module.profile.entity.StudentProfile;
 import com.example.ailearning.module.profile.mapper.StudentProfileMapper;
+import com.example.ailearning.module.profile.service.ProfileService;
+import com.example.ailearning.module.profile.vo.LearningProfileVO;
+import com.example.ailearning.module.project.entity.ProjectDeliverable;
+import com.example.ailearning.module.project.mapper.ProjectDeliverableMapper;
 import com.example.ailearning.module.resource.entity.ResourcePackage;
 import com.example.ailearning.module.resource.mapper.ResourcePackageMapper;
 import com.example.ailearning.module.resource.vo.AiGeneratedResourceVO;
@@ -28,10 +40,17 @@ import com.example.ailearning.module.teacher.entity.Teacher;
 import com.example.ailearning.module.teacher.entity.TeacherStudentGroup;
 import com.example.ailearning.module.teacher.mapper.TeacherMapper;
 import com.example.ailearning.module.teacher.mapper.TeacherStudentGroupMapper;
+import com.example.ailearning.module.user.entity.User;
+import com.example.ailearning.module.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,11 +61,17 @@ public class DashboardService {
     private final TeacherMapper teacherMapper;
     private final TeacherStudentGroupMapper teacherStudentGroupMapper;
     private final StudentProfileMapper profileMapper;
+    private final ProfileService profileService;
     private final LearningPathMapper pathMapper;
     private final LearningPathStepMapper stepMapper;
     private final ResourceRecommendationMapper recommendationMapper;
     private final AiGeneratedResourceMapper resourceMapper;
     private final ResourcePackageMapper packageMapper;
+    private final StudentCapabilityScoreMapper capabilityScoreMapper;
+    private final UserMapper userMapper;
+    private final CompetitionResultMapper competitionResultMapper;
+    private final CertificateResultMapper certificateResultMapper;
+    private final ProjectDeliverableMapper projectDeliverableMapper;
 
     public DashboardService(
             StudentContextService studentContextService,
@@ -54,22 +79,34 @@ public class DashboardService {
             TeacherMapper teacherMapper,
             TeacherStudentGroupMapper teacherStudentGroupMapper,
             StudentProfileMapper profileMapper,
+            ProfileService profileService,
             LearningPathMapper pathMapper,
             LearningPathStepMapper stepMapper,
             ResourceRecommendationMapper recommendationMapper,
             AiGeneratedResourceMapper resourceMapper,
-            ResourcePackageMapper packageMapper
+            ResourcePackageMapper packageMapper,
+            StudentCapabilityScoreMapper capabilityScoreMapper,
+            UserMapper userMapper,
+            CompetitionResultMapper competitionResultMapper,
+            CertificateResultMapper certificateResultMapper,
+            ProjectDeliverableMapper projectDeliverableMapper
     ) {
         this.studentContextService = studentContextService;
         this.studentMapper = studentMapper;
         this.teacherMapper = teacherMapper;
         this.teacherStudentGroupMapper = teacherStudentGroupMapper;
         this.profileMapper = profileMapper;
+        this.profileService = profileService;
         this.pathMapper = pathMapper;
         this.stepMapper = stepMapper;
         this.recommendationMapper = recommendationMapper;
         this.resourceMapper = resourceMapper;
         this.packageMapper = packageMapper;
+        this.capabilityScoreMapper = capabilityScoreMapper;
+        this.userMapper = userMapper;
+        this.competitionResultMapper = competitionResultMapper;
+        this.certificateResultMapper = certificateResultMapper;
+        this.projectDeliverableMapper = projectDeliverableMapper;
     }
 
     public DashboardOverviewVO overview() {
@@ -90,6 +127,159 @@ public class DashboardService {
 
     public List<DashboardItemVO> teacherPendingReviews() {
         return pendingReviewsForCurrentStaff();
+    }
+
+    public List<ClassStudentOverviewVO> classStudents(Long classId) {
+        return visibleStudentsInClass(classId).stream().map(this::classStudentVO).toList();
+    }
+
+    public List<LearningProfileVO> classLearningProfiles(Long classId) {
+        return visibleStudentsInClass(classId).stream()
+                .map(Student::getId)
+                .map(this::safeStudentProfile)
+                .filter(profile -> profile != null && profile.getId() != null)
+                .toList();
+    }
+
+    public List<ClassWeakPointVO> classWeakPoints(Long classId) {
+        List<Student> students = visibleStudentsInClass(classId);
+        if (students.isEmpty()) {
+            return List.of();
+        }
+        List<Long> studentIds = students.stream().map(Student::getId).toList();
+        List<StudentCapabilityScore> scores = capabilityScoreMapper.selectList(new LambdaQueryWrapper<StudentCapabilityScore>()
+                .in(StudentCapabilityScore::getStudentId, studentIds)
+                .isNull(StudentCapabilityScore::getDeletedAt));
+        Map<String, List<StudentCapabilityScore>> grouped = scores.stream()
+                .filter(this::isWeakCapabilityScore)
+                .collect(Collectors.groupingBy(
+                        score -> score.getTargetType() + "#" + score.getTargetId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+        return grouped.values().stream()
+                .map(list -> weakPointVO(list, students.size()))
+                .sorted(Comparator.comparing(ClassWeakPointVO::getAverageScore, Comparator.nullsLast(Comparator.naturalOrder())))
+                .limit(10)
+                .toList();
+    }
+
+    private List<Student> visibleStudentsInClass(Long classId) {
+        List<Student> classStudents = studentMapper.selectList(new LambdaQueryWrapper<Student>()
+                .eq(Student::getClassId, classId)
+                .isNull(Student::getDeletedAt)
+                .orderByAsc(Student::getStudentNo)
+                .orderByAsc(Student::getId));
+        CurrentUser currentUser = CurrentUserHolder.getRequired();
+        if (canViewAllStudents(currentUser)) {
+            return classStudents;
+        }
+        Teacher teacher = currentTeacher(currentUser);
+        if (teacher == null || classStudents.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> assignedStudentIds = teacherStudentGroupMapper.selectList(new LambdaQueryWrapper<TeacherStudentGroup>()
+                        .eq(TeacherStudentGroup::getTeacherId, teacher.getId())
+                        .isNull(TeacherStudentGroup::getDeletedAt))
+                .stream()
+                .map(TeacherStudentGroup::getStudentId)
+                .collect(Collectors.toSet());
+        return classStudents.stream()
+                .filter(student -> assignedStudentIds.contains(student.getId()))
+                .toList();
+    }
+
+    private boolean canViewAllStudents(CurrentUser currentUser) {
+        return currentUser.getRoleCodes().stream()
+                .anyMatch(role -> role.equals("admin") || role.equals("major_leader") || role.equals("data_viewer"));
+    }
+
+    private Teacher currentTeacher(CurrentUser currentUser) {
+        return teacherMapper.selectOne(new LambdaQueryWrapper<Teacher>()
+                .eq(Teacher::getUserId, currentUser.getUserId())
+                .isNull(Teacher::getDeletedAt)
+                .last("LIMIT 1"));
+    }
+
+    private ClassStudentOverviewVO classStudentVO(Student student) {
+        StudentProfile profile = latestProfileOrNull(student.getId());
+        LearningPath latestPath = latestPath(student.getId());
+        List<LearningPathStep> steps = latestPath == null ? List.of() : steps(latestPath.getId());
+
+        ClassStudentOverviewVO vo = new ClassStudentOverviewVO();
+        vo.setStudentId(student.getId());
+        vo.setStudentNo(student.getStudentNo());
+        vo.setRealName(realName(student.getUserId()));
+        vo.setClassId(student.getClassId());
+        vo.setGrade(student.getGrade());
+        vo.setEnrollmentStatus(student.getEnrollmentStatus());
+        vo.setProfileVersion(profile == null ? null : profile.getProfileVersion());
+        vo.setProfileCompletenessScore(profile == null ? null : profile.getCompletenessScore());
+        vo.setLastProfileGeneratedAt(profile == null ? null : profile.getLastGeneratedAt());
+        vo.setLearningPathProgressPercent(progressPercent(steps));
+        vo.setWeakPointCount(weakPointCount(student.getId()));
+        return vo;
+    }
+
+    private LearningProfileVO safeStudentProfile(Long studentId) {
+        try {
+            return profileService.studentProfile(studentId);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private String realName(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        User user = userMapper.selectById(userId);
+        return user == null ? null : user.getRealName();
+    }
+
+    private StudentProfile latestProfileOrNull(Long studentId) {
+        return profileMapper.selectOne(new LambdaQueryWrapper<StudentProfile>()
+                .eq(StudentProfile::getStudentId, studentId)
+                .isNull(StudentProfile::getDeletedAt)
+                .orderByDesc(StudentProfile::getProfileVersion)
+                .last("LIMIT 1"));
+    }
+
+    private long weakPointCount(Long studentId) {
+        return capabilityScoreMapper.selectList(new LambdaQueryWrapper<StudentCapabilityScore>()
+                        .eq(StudentCapabilityScore::getStudentId, studentId)
+                        .isNull(StudentCapabilityScore::getDeletedAt))
+                .stream()
+                .filter(this::isWeakCapabilityScore)
+                .count();
+    }
+
+    private boolean isWeakCapabilityScore(StudentCapabilityScore score) {
+        if (score.getScore() != null && score.getScore().compareTo(BigDecimal.valueOf(60)) < 0) {
+            return true;
+        }
+        return "weak".equals(score.getMasteryStatus()) || "not_mastered".equals(score.getMasteryStatus());
+    }
+
+    private ClassWeakPointVO weakPointVO(List<StudentCapabilityScore> scores, int totalStudentCount) {
+        StudentCapabilityScore first = scores.get(0);
+        BigDecimal average = scores.stream()
+                .map(StudentCapabilityScore::getScore)
+                .filter(score -> score != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long scoredCount = scores.stream().filter(score -> score.getScore() != null).count();
+        if (scoredCount > 0) {
+            average = average.divide(BigDecimal.valueOf(scoredCount), 2, RoundingMode.HALF_UP);
+        }
+
+        ClassWeakPointVO vo = new ClassWeakPointVO();
+        vo.setTargetType(first.getTargetType());
+        vo.setTargetId(first.getTargetId());
+        vo.setLabel(first.getTargetType() + "#" + first.getTargetId());
+        vo.setAverageScore(scoredCount == 0 ? null : average);
+        vo.setAffectedStudentCount(scores.stream().map(StudentCapabilityScore::getStudentId).distinct().count());
+        vo.setTotalStudentCount((long) totalStudentCount);
+        return vo;
     }
 
     private DashboardOverviewVO studentOverview(CurrentUser currentUser, Student student) {
@@ -144,12 +334,15 @@ public class DashboardService {
 
     private List<DashboardItemVO> pendingReviewsForCurrentStaff() {
         CurrentUser currentUser = CurrentUserHolder.getRequired();
+        List<DashboardItemVO> items = new ArrayList<>();
         if (currentUser.getRoleCodes().stream().anyMatch(role -> role.equals("admin") || role.equals("major_leader") || role.equals("data_viewer"))) {
-            return packageMapper.selectList(new LambdaQueryWrapper<ResourcePackage>()
+            items.addAll(packageMapper.selectList(new LambdaQueryWrapper<ResourcePackage>()
                             .eq(ResourcePackage::getReviewStatus, "pending_review")
                             .isNull(ResourcePackage::getDeletedAt)
                             .orderByDesc(ResourcePackage::getCreatedAt))
-                    .stream().limit(20).map(this::reviewItem).toList();
+                    .stream().map(this::reviewItem).toList());
+            items.addAll(globalAchievementReviews());
+            return items.stream().limit(20).toList();
         }
         Teacher teacher = teacherMapper.selectOne(new LambdaQueryWrapper<Teacher>()
                 .eq(Teacher::getUserId, currentUser.getUserId())
@@ -165,12 +358,57 @@ public class DashboardService {
         if (studentIds.isEmpty()) {
             return List.of();
         }
-        return packageMapper.selectList(new LambdaQueryWrapper<ResourcePackage>()
+        items.addAll(packageMapper.selectList(new LambdaQueryWrapper<ResourcePackage>()
                         .in(ResourcePackage::getStudentId, studentIds)
                         .eq(ResourcePackage::getReviewStatus, "pending_review")
                         .isNull(ResourcePackage::getDeletedAt)
                         .orderByDesc(ResourcePackage::getCreatedAt))
-                .stream().limit(20).map(this::reviewItem).toList();
+                .stream().map(this::reviewItem).toList());
+        items.addAll(assignedAchievementReviews(studentIds));
+        return items.stream().limit(20).toList();
+    }
+
+    private List<DashboardItemVO> globalAchievementReviews() {
+        List<DashboardItemVO> items = new ArrayList<>();
+        items.addAll(competitionResultMapper.selectList(new LambdaQueryWrapper<CompetitionResult>()
+                        .eq(CompetitionResult::getReviewStatus, "pending")
+                        .isNull(CompetitionResult::getDeletedAt)
+                        .orderByDesc(CompetitionResult::getCreatedAt))
+                .stream().map(this::competitionResultItem).toList());
+        items.addAll(certificateResultMapper.selectList(new LambdaQueryWrapper<CertificateResult>()
+                        .eq(CertificateResult::getReviewStatus, "pending")
+                        .isNull(CertificateResult::getDeletedAt)
+                        .orderByDesc(CertificateResult::getCreatedAt))
+                .stream().map(this::certificateResultItem).toList());
+        items.addAll(projectDeliverableMapper.selectList(new LambdaQueryWrapper<ProjectDeliverable>()
+                        .eq(ProjectDeliverable::getReviewStatus, "pending")
+                        .isNull(ProjectDeliverable::getDeletedAt)
+                        .orderByDesc(ProjectDeliverable::getCreatedAt))
+                .stream().map(this::projectDeliverableItem).toList());
+        return items;
+    }
+
+    private List<DashboardItemVO> assignedAchievementReviews(List<Long> studentIds) {
+        List<DashboardItemVO> items = new ArrayList<>();
+        items.addAll(competitionResultMapper.selectList(new LambdaQueryWrapper<CompetitionResult>()
+                        .in(CompetitionResult::getStudentId, studentIds)
+                        .eq(CompetitionResult::getReviewStatus, "pending")
+                        .isNull(CompetitionResult::getDeletedAt)
+                        .orderByDesc(CompetitionResult::getCreatedAt))
+                .stream().map(this::competitionResultItem).toList());
+        items.addAll(certificateResultMapper.selectList(new LambdaQueryWrapper<CertificateResult>()
+                        .in(CertificateResult::getStudentId, studentIds)
+                        .eq(CertificateResult::getReviewStatus, "pending")
+                        .isNull(CertificateResult::getDeletedAt)
+                        .orderByDesc(CertificateResult::getCreatedAt))
+                .stream().map(this::certificateResultItem).toList());
+        items.addAll(projectDeliverableMapper.selectList(new LambdaQueryWrapper<ProjectDeliverable>()
+                        .in(ProjectDeliverable::getStudentId, studentIds)
+                        .eq(ProjectDeliverable::getReviewStatus, "pending")
+                        .isNull(ProjectDeliverable::getDeletedAt)
+                        .orderByDesc(ProjectDeliverable::getCreatedAt))
+                .stream().map(this::projectDeliverableItem).toList());
+        return items;
     }
 
     private List<DashboardItemVO> pendingReviewsForStudent(Long studentId) {
@@ -288,6 +526,30 @@ public class DashboardService {
         item.setTargetType("resource_package");
         item.setTargetId(resourcePackage.getId());
         item.setCreatedAt(resourcePackage.getCreatedAt());
+        return item;
+    }
+
+    private DashboardItemVO competitionResultItem(CompetitionResult result) {
+        DashboardItemVO item = item("competition_result_review", "竞赛成果审核：" + result.getAwardName(), "学生 ID：" + result.getStudentId(), "important", "competition_result", result.getId());
+        item.setId(result.getId());
+        item.setStatus(result.getReviewStatus());
+        item.setCreatedAt(result.getCreatedAt());
+        return item;
+    }
+
+    private DashboardItemVO certificateResultItem(CertificateResult result) {
+        DashboardItemVO item = item("certificate_result_review", "证书成果审核：" + result.getCertificateNo(), "学生 ID：" + result.getStudentId(), "important", "certificate_result", result.getId());
+        item.setId(result.getId());
+        item.setStatus(result.getReviewStatus());
+        item.setCreatedAt(result.getCreatedAt());
+        return item;
+    }
+
+    private DashboardItemVO projectDeliverableItem(ProjectDeliverable deliverable) {
+        DashboardItemVO item = item("project_deliverable_review", "项目交付物审核：" + deliverable.getTitle(), "学生 ID：" + deliverable.getStudentId(), "important", "project_deliverable", deliverable.getId());
+        item.setId(deliverable.getId());
+        item.setStatus(deliverable.getReviewStatus());
+        item.setCreatedAt(deliverable.getCreatedAt());
         return item;
     }
 
