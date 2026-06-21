@@ -3,6 +3,7 @@ package com.example.ailearning.module.user.controller;
 import com.example.ailearning.common.api.ApiResponse;
 import com.example.ailearning.common.pagination.PageResult;
 import com.example.ailearning.module.user.dto.ResetPasswordRequest;
+import com.example.ailearning.module.user.dto.UserCreateRequest;
 import com.example.ailearning.module.user.dto.UserPageQuery;
 import com.example.ailearning.module.user.service.UserService;
 import com.example.ailearning.module.user.vo.UserVO;
@@ -34,6 +35,17 @@ public class UserController {
     @PreAuthorize("hasAuthority('account.manage')")
     public ApiResponse<UserVO> getUser(@PathVariable Long id) {
         return ApiResponse.success(userService.getUserVO(id));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('account.manage')")
+    public ApiResponse<UserVO> createUser(@Valid @RequestBody UserCreateRequest request) {
+        return ApiResponse.success(userService.createUser(request));
+    }
+
+    @PostMapping("/bootstrap-admin")
+    public ApiResponse<UserVO> bootstrapAdmin(@Valid @RequestBody UserCreateRequest request) {
+        return ApiResponse.success(userService.bootstrapAdmin(request));
     }
 
     @PostMapping("/{id}/reset-password")
