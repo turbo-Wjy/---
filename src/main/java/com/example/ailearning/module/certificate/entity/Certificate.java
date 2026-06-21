@@ -1,6 +1,7 @@
 package com.example.ailearning.module.certificate.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -13,6 +14,7 @@ public class Certificate {
     private Long majorId;
     private String certificateName;
     private String requirementLevel;
+    @TableField("graduation_required")
     private Boolean graduationRequired;
     private String resourceUrl;
     private Long importedBy;

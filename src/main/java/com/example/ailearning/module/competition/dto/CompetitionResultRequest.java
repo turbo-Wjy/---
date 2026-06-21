@@ -4,12 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class CompetitionResultRequest {
-    @NotNull
+    @NotNull(message = "竞赛ID不能为空")
     private Long competitionId;
-    @NotNull
+    @NotNull(message = "学生ID不能为空")
     private Long studentId;
     private Long coachTeacherId;
-    @NotBlank
+    @NotBlank(message = "奖项名称不能为空")
     private String awardName;
     private String proofFileUrl;
 

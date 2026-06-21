@@ -11,6 +11,8 @@ public class ExportRecordVO {
     private String fileUrl;
     private Boolean desensitized;
     private String exportStatus;
+    private String status;
+    private Integer rowCount;
     private LocalDateTime createdAt;
 
     public Long getId() { return id; }
@@ -29,6 +31,10 @@ public class ExportRecordVO {
     public void setDesensitized(Boolean desensitized) { this.desensitized = desensitized; }
     public String getExportStatus() { return exportStatus; }
     public void setExportStatus(String exportStatus) { this.exportStatus = exportStatus; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Integer getRowCount() { return rowCount; }
+    public void setRowCount(Integer rowCount) { this.rowCount = rowCount; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

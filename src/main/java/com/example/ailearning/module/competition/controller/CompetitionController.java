@@ -1,61 +1,58 @@
 package com.example.ailearning.module.competition.controller;
 
 import com.example.ailearning.common.api.ApiResponse;
-import com.example.ailearning.module.audit.dto.ReviewRequest;
-import com.example.ailearning.module.audit.service.AchievementReviewService;
+import com.example.ailearning.common.pagination.PageQuery;
+import com.example.ailearning.common.pagination.PageResult;
 import com.example.ailearning.module.competition.dto.CompetitionRequest;
-import com.example.ailearning.module.competition.dto.CompetitionResultRequest;
-import com.example.ailearning.module.competition.entity.Competition;
-import com.example.ailearning.module.competition.entity.CompetitionResult;
 import com.example.ailearning.module.competition.service.CompetitionService;
+import com.example.ailearning.module.competition.vo.CompetitionVO;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/competitions")
 public class CompetitionController {
     private final CompetitionService competitionService;
-    private final AchievementReviewService reviewService;
 
-    public CompetitionController(CompetitionService competitionService, AchievementReviewService reviewService) {
+    public CompetitionController(CompetitionService competitionService) {
         this.competitionService = competitionService;
-        this.reviewService = reviewService;
     }
 
-    @GetMapping("/competitions")
-    public ApiResponse<List<Competition>> competitions(@RequestParam(required = false) String status) {
-        return ApiResponse.success(competitionService.list(status));
+    @GetMapping
+    public ApiResponse<PageResult<CompetitionVO>> page(PageQuery query, @RequestParam(required = false) String level) {
+        return ApiResponse.success(competitionService.page(query, level));
     }
 
-    @PostMapping("/competitions")
+    @GetMapping("/{id}")
+    public ApiResponse<CompetitionVO> get(@PathVariable Long id) {
+        return ApiResponse.success(competitionService.get(id));
+    }
+
+    @PostMapping
     @PreAuthorize("hasAuthority('competition.publish')")
-    public ApiResponse<Competition> createCompetition(@Valid @RequestBody CompetitionRequest request) {
+    public ApiResponse<CompetitionVO> create(@Valid @RequestBody CompetitionRequest request) {
         return ApiResponse.success(competitionService.create(request));
     }
 
-    @GetMapping("/competition-results")
-    public ApiResponse<List<CompetitionResult>> competitionResults(@RequestParam(required = false) String reviewStatus) {
-        return ApiResponse.success(competitionService.listResults(reviewStatus));
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('competition.publish')")
+    public ApiResponse<CompetitionVO> update(@PathVariable Long id, @Valid @RequestBody CompetitionRequest request) {
+        return ApiResponse.success(competitionService.update(id, request));
     }
 
-    @PostMapping("/competition-results")
-    @PreAuthorize("hasAnyAuthority('competition.publish','competition_result.upload_coached')")
-    public ApiResponse<CompetitionResult> submitCompetitionResult(@Valid @RequestBody CompetitionResultRequest request) {
-        return ApiResponse.success(competitionService.submitResult(request));
-    }
-
-    @PostMapping("/competition-results/{id}/review")
-    @PreAuthorize("hasAnyAuthority('competition.publish','competition_result.review')")
-    public ApiResponse<CompetitionResult> reviewCompetitionResult(@PathVariable Long id, @Valid @RequestBody ReviewRequest request) {
-        return ApiResponse.success(reviewService.reviewCompetitionResult(id, request));
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('competition.publish')")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        competitionService.softDelete(id);
+        return ApiResponse.success(null);
     }
 }

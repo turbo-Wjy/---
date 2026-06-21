@@ -85,6 +85,7 @@
 | GET | `/users` | `account.manage` | 用户列表 |
 | GET | `/users/{id}` | `account.manage` | 用户详情 |
 | POST | `/users` | `account.manage` | 新增用户 |
+| POST | `/users/bootstrap-admin` | public / bootstrap only | 初始化可登录管理员，仅无可用管理员时开放 |
 | PUT | `/users/{id}` | `account.manage` | 修改用户 |
 | DELETE | `/users/{id}` | `account.manage` | 停用用户 |
 | POST | `/users/{id}/reset-password` | `account.manage` | 重置密码 |
@@ -428,4 +429,3 @@
 - 教师任务表
 - 竞赛团队 / 里程碑 / 交付物表
 - 项目任务 / 里程碑 / 交付物表
-

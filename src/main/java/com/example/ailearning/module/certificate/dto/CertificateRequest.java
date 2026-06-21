@@ -4,13 +4,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public class CertificateRequest {
-    @NotNull
+    @NotNull(message = "专业ID不能为空")
     private Long majorId;
-    @NotBlank
+    @NotBlank(message = "证书名称不能为空")
     private String certificateName;
     private String requirementLevel;
     private Boolean graduationRequired;
     private String resourceUrl;
+    private String status;
 
     public Long getMajorId() { return majorId; }
     public void setMajorId(Long majorId) { this.majorId = majorId; }
@@ -22,4 +23,6 @@ public class CertificateRequest {
     public void setGraduationRequired(Boolean graduationRequired) { this.graduationRequired = graduationRequired; }
     public String getResourceUrl() { return resourceUrl; }
     public void setResourceUrl(String resourceUrl) { this.resourceUrl = resourceUrl; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

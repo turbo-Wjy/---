@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 
 public class CompetitionRequest {
-    @NotBlank
+    @NotBlank(message = "竞赛名称不能为空")
     private String title;
     private String level;
     private LocalDateTime startTime;
@@ -13,6 +13,7 @@ public class CompetitionRequest {
     private String location;
     private String requirements;
     private String officialUrl;
+    private String status;
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
@@ -28,4 +29,6 @@ public class CompetitionRequest {
     public void setRequirements(String requirements) { this.requirements = requirements; }
     public String getOfficialUrl() { return officialUrl; }
     public void setOfficialUrl(String officialUrl) { this.officialUrl = officialUrl; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

@@ -1,7 +1,7 @@
 -- =========================================================
 -- AI 岗课赛证学习平台：融合关系测试数据种子
 -- Version: 002
--- Target: MySQL 8
+-- Target: MySQL 5.7+ / 8
 -- Purpose: seed job role, capabilities, knowledge points,
 --          competition tasks, certificate units, assessment points,
 --          fusion relations, capability scores and one resource package.
@@ -98,18 +98,33 @@ SET @kp_api = (SELECT id FROM course_knowledge_points WHERE course_id = @course_
 SET @kp_prompt = (SELECT id FROM course_knowledge_points WHERE course_id = @course_ai AND name = '提示词工程基础' LIMIT 1);
 SET @kp_rag = (SELECT id FROM course_knowledge_points WHERE course_id = @course_ai AND name = 'RAG知识库基础' LIMIT 1);
 
-INSERT INTO knowledge_point_relations (
+INSERT IGNORE INTO knowledge_point_relations (
   source_knowledge_point_id, target_knowledge_point_id, relation_type, weight, description, status
-) VALUES
-  (@kp_python, @kp_supervised, 'prerequisite', 0.80, 'Python数据处理是监督学习实验的前置基础。', 'active'),
-  (@kp_supervised, @kp_eval, 'supports', 0.90, '监督学习模型训练后需要通过模型评估判断效果。', 'active'),
-  (@kp_api, @kp_prompt, 'supports', 0.85, '大模型API调用需要配合提示词设计完成具体任务。', 'active'),
-  (@kp_prompt, @kp_rag, 'supports', 0.75, '提示词工程基础支撑RAG回答质量优化。', 'active')
-ON DUPLICATE KEY UPDATE
-  weight = VALUES(weight),
-  description = VALUES(description),
-  status = VALUES(status),
-  updated_at = CURRENT_TIMESTAMP;
+)
+SELECT @kp_python, @kp_supervised, 'prerequisite', 0.80, 'Python数据处理是监督学习实验的前置基础。', 'active'
+FROM DUAL
+WHERE @kp_python IS NOT NULL AND @kp_supervised IS NOT NULL;
+
+INSERT IGNORE INTO knowledge_point_relations (
+  source_knowledge_point_id, target_knowledge_point_id, relation_type, weight, description, status
+)
+SELECT @kp_supervised, @kp_eval, 'supports', 0.90, '监督学习模型训练后需要通过模型评估判断效果。', 'active'
+FROM DUAL
+WHERE @kp_supervised IS NOT NULL AND @kp_eval IS NOT NULL;
+
+INSERT IGNORE INTO knowledge_point_relations (
+  source_knowledge_point_id, target_knowledge_point_id, relation_type, weight, description, status
+)
+SELECT @kp_api, @kp_prompt, 'supports', 0.85, '大模型API调用需要配合提示词设计完成具体任务。', 'active'
+FROM DUAL
+WHERE @kp_api IS NOT NULL AND @kp_prompt IS NOT NULL;
+
+INSERT IGNORE INTO knowledge_point_relations (
+  source_knowledge_point_id, target_knowledge_point_id, relation_type, weight, description, status
+)
+SELECT @kp_prompt, @kp_rag, 'supports', 0.75, '提示词工程基础支撑RAG回答质量优化。', 'active'
+FROM DUAL
+WHERE @kp_prompt IS NOT NULL AND @kp_rag IS NOT NULL;
 
 -- =========================================================
 -- 3. 竞赛任务点
@@ -198,49 +213,111 @@ SET @point_api = (SELECT id FROM certificate_assessment_points WHERE unit_id = @
 -- 5. 岗课赛证融合关系
 -- =========================================================
 
-INSERT INTO fusion_relations (
+INSERT IGNORE INTO fusion_relations (
   source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
-) VALUES
-  ('job_capability', @cap_python, 'course_knowledge_point', @kp_python, 'supports', 0.92, 'Python数据处理知识点支撑AI应用开发助理的数据处理能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'),
-  ('job_capability', @cap_eval, 'course_knowledge_point', @kp_eval, 'supports', 0.95, '模型评估知识点支撑岗位中的模型效果判断能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'),
-  ('job_capability', @cap_prompt, 'course_knowledge_point', @kp_api, 'supports', 0.88, '大模型API调用知识点支撑岗位中的AI应用集成能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'),
-  ('job_capability', @cap_prompt, 'course_knowledge_point', @kp_prompt, 'supports', 0.90, '提示词工程基础支撑岗位中的智能交互设计能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'),
-  ('job_capability', @cap_rag, 'course_knowledge_point', @kp_rag, 'supports', 0.82, 'RAG知识库基础支撑岗位中的知识库问答搭建能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'),
-  ('job_capability', @cap_python, 'competition_task', @task_data, 'improves', 0.86, '赛题数据理解与预处理任务可提升Python数据处理能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-competition'), 'active'),
-  ('job_capability', @cap_eval, 'competition_task', @task_eval, 'improves', 0.90, '模型训练与效果评估任务可提升模型评估能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-competition'), 'active'),
-  ('job_capability', @cap_prompt, 'competition_task', @task_assistant, 'improves', 0.84, 'AI学习助手原型任务可提升API调用与提示词设计能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-competition'), 'active'),
-  ('job_capability', @cap_python, 'certificate_assessment_point', @point_data, 'assesses', 0.82, '证书考核点数据预处理基础可评价Python数据处理能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-certificate'), 'active'),
-  ('job_capability', @cap_eval, 'certificate_assessment_point', @point_eval, 'assesses', 0.88, '证书考核点模型评估指标理解可评价模型评估能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-certificate'), 'active'),
-  ('job_capability', @cap_prompt, 'certificate_assessment_point', @point_api, 'assesses', 0.80, '证书考核点大模型API基础使用可评价API调用能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-certificate'), 'active'),
-  ('course_knowledge_point', @kp_eval, 'certificate_assessment_point', @point_eval, 'supports', 0.90, '课程中的模型评估知识点支撑证书中的模型评估考核点。', JSON_OBJECT('source', 'seed', 'scenario', 'course-certificate'), 'active'),
-  ('competition_task', @task_eval, 'certificate_assessment_point', @point_eval, 'supports', 0.78, '竞赛模型评估任务可反向支撑证书模型评估达标。', JSON_OBJECT('source', 'seed', 'scenario', 'competition-certificate'), 'active')
-ON DUPLICATE KEY UPDATE
-  weight = VALUES(weight),
-  description = VALUES(description),
-  evidence_json = VALUES(evidence_json),
-  status = VALUES(status),
-  updated_at = CURRENT_TIMESTAMP;
+)
+SELECT 'job_capability', @cap_python, 'course_knowledge_point', @kp_python, 'supports', 0.92, 'Python数据处理知识点支撑AI应用开发助理的数据处理能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'
+WHERE @cap_python IS NOT NULL AND @kp_python IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_eval, 'course_knowledge_point', @kp_eval, 'supports', 0.95, '模型评估知识点支撑岗位中的模型效果判断能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'
+WHERE @cap_eval IS NOT NULL AND @kp_eval IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_prompt, 'course_knowledge_point', @kp_api, 'supports', 0.88, '大模型API调用知识点支撑岗位中的AI应用集成能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'
+WHERE @cap_prompt IS NOT NULL AND @kp_api IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_prompt, 'course_knowledge_point', @kp_prompt, 'supports', 0.90, '提示词工程基础支撑岗位中的智能交互设计能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'
+WHERE @cap_prompt IS NOT NULL AND @kp_prompt IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_rag, 'course_knowledge_point', @kp_rag, 'supports', 0.82, 'RAG知识库基础支撑岗位中的知识库问答搭建能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-course'), 'active'
+WHERE @cap_rag IS NOT NULL AND @kp_rag IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_python, 'competition_task', @task_data, 'improves', 0.86, '赛题数据理解与预处理任务可提升Python数据处理能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-competition'), 'active'
+WHERE @cap_python IS NOT NULL AND @task_data IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_eval, 'competition_task', @task_eval, 'improves', 0.90, '模型训练与效果评估任务可提升模型评估能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-competition'), 'active'
+WHERE @cap_eval IS NOT NULL AND @task_eval IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_prompt, 'competition_task', @task_assistant, 'improves', 0.84, 'AI学习助手原型任务可提升API调用与提示词设计能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-competition'), 'active'
+WHERE @cap_prompt IS NOT NULL AND @task_assistant IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_python, 'certificate_assessment_point', @point_data, 'assesses', 0.82, '证书考核点数据预处理基础可评价Python数据处理能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-certificate'), 'active'
+WHERE @cap_python IS NOT NULL AND @point_data IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_eval, 'certificate_assessment_point', @point_eval, 'assesses', 0.88, '证书考核点模型评估指标理解可评价模型评估能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-certificate'), 'active'
+WHERE @cap_eval IS NOT NULL AND @point_eval IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'job_capability', @cap_prompt, 'certificate_assessment_point', @point_api, 'assesses', 0.80, '证书考核点大模型API基础使用可评价API调用能力。', JSON_OBJECT('source', 'seed', 'scenario', 'job-certificate'), 'active'
+WHERE @cap_prompt IS NOT NULL AND @point_api IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'course_knowledge_point', @kp_eval, 'certificate_assessment_point', @point_eval, 'supports', 0.90, '课程中的模型评估知识点支撑证书中的模型评估考核点。', JSON_OBJECT('source', 'seed', 'scenario', 'course-certificate'), 'active'
+WHERE @kp_eval IS NOT NULL AND @point_eval IS NOT NULL;
+
+INSERT IGNORE INTO fusion_relations (
+  source_type, source_id, target_type, target_id, relation_type, weight, description, evidence_json, status
+)
+SELECT 'competition_task', @task_eval, 'certificate_assessment_point', @point_eval, 'supports', 0.78, '竞赛模型评估任务可反向支撑证书模型评估达标。', JSON_OBJECT('source', 'seed', 'scenario', 'competition-certificate'), 'active'
+WHERE @task_eval IS NOT NULL AND @point_eval IS NOT NULL;
 
 -- =========================================================
 -- 6. 学生能力得分样例
 -- =========================================================
 
-INSERT INTO student_capability_scores (
+INSERT IGNORE INTO student_capability_scores (
   student_id, target_type, target_id, score, mastery_status, source_type, source_id, evidence_json, evaluated_at, status
-) VALUES
-  (@student_demo, 'job_capability', @cap_python, 76.00, 'qualified', 'learning_record', NULL, JSON_OBJECT('source', 'seed', 'reason', '已完成监督学习资料学习'), NOW(), 'active'),
-  (@student_demo, 'job_capability', @cap_eval, 62.00, 'developing', 'quiz_attempt', NULL, JSON_OBJECT('source', 'seed', 'reason', '模型评估题目仍有错题'), NOW(), 'active'),
-  (@student_demo, 'job_capability', @cap_prompt, 45.00, 'weak', 'profile', @profile_demo, JSON_OBJECT('source', 'seed', 'reason', 'API调用与提示词经验不足'), NOW(), 'active'),
-  (@student_demo, 'course_knowledge_point', @kp_eval, 66.00, 'developing', 'quiz_attempt', NULL, JSON_OBJECT('source', 'seed', 'reason', 'F1指标理解需要加强'), NOW(), 'active')
-ON DUPLICATE KEY UPDATE
-  score = VALUES(score),
-  mastery_status = VALUES(mastery_status),
-  source_type = VALUES(source_type),
-  source_id = VALUES(source_id),
-  evidence_json = VALUES(evidence_json),
-  evaluated_at = VALUES(evaluated_at),
-  status = VALUES(status),
-  updated_at = CURRENT_TIMESTAMP;
+)
+SELECT @student_demo, 'job_capability', @cap_python, 76.00, 'qualified', 'learning_record', NULL, JSON_OBJECT('source', 'seed', 'reason', '已完成监督学习资料学习'), NOW(), 'active'
+WHERE @student_demo IS NOT NULL AND @cap_python IS NOT NULL;
+
+INSERT IGNORE INTO student_capability_scores (
+  student_id, target_type, target_id, score, mastery_status, source_type, source_id, evidence_json, evaluated_at, status
+)
+SELECT @student_demo, 'job_capability', @cap_eval, 62.00, 'developing', 'quiz_attempt', NULL, JSON_OBJECT('source', 'seed', 'reason', '模型评估题目仍有错题'), NOW(), 'active'
+WHERE @student_demo IS NOT NULL AND @cap_eval IS NOT NULL;
+
+INSERT IGNORE INTO student_capability_scores (
+  student_id, target_type, target_id, score, mastery_status, source_type, source_id, evidence_json, evaluated_at, status
+)
+SELECT @student_demo, 'job_capability', @cap_prompt, 45.00, 'weak', 'profile', @profile_demo, JSON_OBJECT('source', 'seed', 'reason', 'API调用与提示词经验不足'), NOW(), 'active'
+WHERE @student_demo IS NOT NULL AND @cap_prompt IS NOT NULL;
+
+INSERT IGNORE INTO student_capability_scores (
+  student_id, target_type, target_id, score, mastery_status, source_type, source_id, evidence_json, evaluated_at, status
+)
+SELECT @student_demo, 'course_knowledge_point', @kp_eval, 66.00, 'developing', 'quiz_attempt', NULL, JSON_OBJECT('source', 'seed', 'reason', 'F1指标理解需要加强'), NOW(), 'active'
+WHERE @student_demo IS NOT NULL AND @kp_eval IS NOT NULL;
 
 -- =========================================================
 -- 7. 资源包样例
